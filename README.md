@@ -1,6 +1,6 @@
 # Betting Market Autopsy
 
-**Do prediction markets actually predict?** This project rigorously analyzes 600+ resolved markets across Metaculus, Manifold, and Polymarket to answer that question with data.
+**Do prediction markets actually predict?** This project rigorously analyzes 600+ resolved markets across Metaculus and Manifold to answer that question with data.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
