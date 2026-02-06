@@ -219,7 +219,6 @@ where:
 |----------|------|----------------|
 | **Metaculus** | Forecasting platform | Community predictions on resolved questions |
 | **Manifold** | Play-money market | Final prices and resolutions |
-| **Polymarket** | Crypto prediction market | Market data (limited historical prices) |
 
 Note: Polymarket's API doesn't retain historical price data for closed markets, so calibration analysis is limited to platforms with prediction histories.
 
@@ -279,4 +278,3 @@ MIT License. See [LICENSE](LICENSE) for details.
 Data sourced from public APIs:
 - [Metaculus](https://www.metaculus.com/)
 - [Manifold Markets](https://manifold.markets/)
-- [Polymarket](https://polymarket.com/)
