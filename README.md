@@ -77,10 +77,13 @@ The project includes an interactive web dashboard that visualizes all analyses:
 
 <img width="1176" height="760" alt="dashboard" src="https://github.com/user-attachments/assets/08e80b6d-e67c-4eb5-a585-e0c0d24f8136" />
 
+
+<img width="1176" height="760" alt="predictions" src="https://github.com/user-attachments/assets/f6e30e1b-1f69-409c-b7d9-63ca2deeba06" />
+
+
 <img width="1176" height="644" alt="image" src="https://github.com/user-attachments/assets/b1cf2093-4892-43b4-8927-02d9df914d91" />
 
 
-<img width="1176" height="760" alt="predictions" src="https://github.com/user-attachments/assets/f6e30e1b-1f69-409c-b7d9-63ca2deeba06" />
 
 
 
