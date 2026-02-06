@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Betting Market Autopsy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --paper: #f8f6f1;
+            --paper-dark: #edeae3;
+            --ink: #1a1a18;
+            --ink-light: #4a4a46;
+            --ink-faded: #8a8a86;
+            --red: #c23d2e;
+            --red-light: #f5e6e4;
+            --blue: #2654a3;
+            --blue-light: #e4eaf5;
+            --green: #2e7d4a;
+            --green-light: #e4f5ea;
+            --rule: #d4d0c8;
+            --serif: 'Source Serif 4', Georgia, serif;
+            --display: 'Instrument Serif', Georgia, serif;
+            --mono: 'IBM Plex Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            font-size: 18px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--serif);
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Editorial Masthead */
+        .masthead {
+            border-bottom: 1px solid var(--ink);
+            padding: 1rem 0;
+            text-align: center;
+        }
+
+        .masthead-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .masthead-date {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            color: var(--ink-faded);
+        }
+
+        .masthead-title {
+            font-family: var(--display);
+            font-size: 0.9rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        /* Hero - Newspaper Style */
+        .hero {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem 3rem;
+            text-align: center;
+            border-bottom: 3px double var(--ink);
+        }
+
+        .hero-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--red);
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            border: 1px solid var(--red);
+            padding: 0.3rem 0.8rem;
+        }
+
+        .hero h1 {
+            font-family: var(--display);
+            font-size: clamp(2.5rem, 7vw, 4.5rem);
+            font-weight: 400;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+        }
+
+        .hero-deck {
+            font-size: 1.25rem;
+            color: var(--ink-light);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            font-style: italic;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--rule);
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .hero-stat-value {
+            font-family: var(--mono);
+            font-size: 2rem;
+            font-weight: 600;
+            display: block;
+            line-height: 1;
+        }
+
+        .hero-stat-label {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-faded);
+            margin-top: 0.5rem;
+        }
+
+        /* Main Content Grid */
+        .content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Article Section */
+        .article {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 4rem;
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .article-main {
+            max-width: 640px;
+        }
+
+        .article-aside {
+            position: sticky;
+            top: 2rem;
+            align-self: start;
+        }
+
+        .section-num {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--ink-faded);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title {
+            font-family: var(--display);
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .prose {
+            color: var(--ink-light);
+        }
+
+        .prose p {
+            margin-bottom: 1.25rem;
+        }
+
+        .prose strong {
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        /* Data Cards */
+        .data-card {
+            background: white;
+            border: 1px solid var(--rule);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .data-card-header {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-faded);
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 0.6rem 0;
+            border-bottom: 1px dotted var(--rule);
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--ink-light);
+        }
+
+        .metric-value {
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .metric-value.good { color: var(--green); }
+        .metric-value.warn { color: var(--red); }
+
+        /* Verdict Box */
+        .verdict-box {
+            background: var(--ink);
+            color: var(--paper);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .verdict-label {
+            font-family: var(--mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            opacity: 0.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .verdict-text {
+            font-family: var(--display);
+            font-size: 1.3rem;
+            font-style: italic;
+            line-height: 1.4;
+        }
+
+        /* Chart Container */
+        .chart-frame {
+            background: white;
+            border: 1px solid var(--rule);
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .chart-title {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--ink-faded);
+            margin-bottom: 1rem;
+        }
+
+        .chart-caption {
+            font-size: 0.8rem;
+            color: var(--ink-faded);
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--rule);
+        }
+
+        /* Platform Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 2rem 0;
+        }
+
+        .comparison-table th {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink-faded);
+        }
+
+        .comparison-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--rule);
+            vertical-align: middle;
+        }
+
+        .comparison-table tr:hover {
+            background: var(--paper-dark);
+        }
+
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .platform-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .platform-dot.metaculus { background: var(--blue); }
+        .platform-dot.manifold { background: var(--green); }
+        .platform-dot.polymarket { background: #8b5cf6; }
+
+        .score-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .score-bar {
+            width: 60px;
+            height: 4px;
+            background: var(--paper-dark);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            background: var(--ink);
+            border-radius: 2px;
+        }
+
+        .calibrated-yes {
+            color: var(--green);
+            font-weight: 500;
+        }
+
+        .calibrated-no {
+            color: var(--red);
+            font-weight: 500;
+        }
+
+        /* Bias Section */
+        .bias-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .bias-card {
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .bias-card.overpriced {
+            background: var(--red-light);
+            border: 1px solid #e5c5c2;
+        }
+
+        .bias-card.fair {
+            background: var(--green-light);
+            border: 1px solid #c2e5ca;
+        }
+
+        .bias-type {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .bias-card.overpriced .bias-type { color: var(--red); }
+        .bias-card.fair .bias-type { color: var(--green); }
+
+        .bias-value {
+            font-family: var(--mono);
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .bias-card.overpriced .bias-value { color: var(--red); }
+        .bias-card.fair .bias-value { color: var(--green); }
+
+        .bias-desc {
+            font-size: 0.85rem;
+            color: var(--ink-light);
+        }
+
+        /* Prediction Browser */
+        .browser-section {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .browser-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .browser-title {
+            font-family: var(--display);
+            font-size: 1.5rem;
+        }
+
+        .browser-filters {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .filter-btn {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--rule);
+            background: white;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--ink);
+            color: var(--paper);
+            border-color: var(--ink);
+        }
+
+        .sort-btn {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.02em;
+            padding: 0.4rem 0.75rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--ink-faded);
+            transition: all 0.15s;
+        }
+
+        .sort-btn:hover {
+            color: var(--ink);
+        }
+
+        .sort-btn.active {
+            color: var(--ink);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .prediction-list {
+            display: grid;
+            gap: 1px;
+            background: var(--rule);
+            border: 1px solid var(--rule);
+        }
+
+        .prediction-item {
+            display: grid;
+            grid-template-columns: 1fr 100px 100px 80px;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: white;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .prediction-item:hover {
+            background: var(--paper-dark);
+        }
+
+        .prediction-title {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .prediction-platform {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--ink-faded);
+            text-transform: uppercase;
+        }
+
+        .prediction-prob, .prediction-outcome {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .prediction-outcome.yes { color: var(--green); }
+        .prediction-outcome.no { color: var(--red); }
+
+        .prediction-accuracy {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 2px;
+        }
+
+        .prediction-accuracy.correct {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .prediction-accuracy.wrong {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .load-more {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-align: center;
+            background: var(--paper-dark);
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .load-more:hover {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        /* Conclusion */
+        .conclusion {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 5rem 2rem;
+            text-align: center;
+        }
+
+        .conclusion-rule {
+            width: 60px;
+            height: 3px;
+            background: var(--ink);
+            margin: 0 auto 2rem;
+        }
+
+        .conclusion h2 {
+            font-family: var(--display);
+            font-size: 2rem;
+            font-weight: 400;
+            line-height: 1.3;
+            margin-bottom: 1.5rem;
+        }
+
+        .conclusion h2 em {
+            font-style: italic;
+        }
+
+        .conclusion p {
+            color: var(--ink-light);
+            font-size: 1.1rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 3px double var(--ink);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-text {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--ink-faded);
+        }
+
+        .footer-tech {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .tech-tag {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--rule);
+            color: var(--ink-faded);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .article {
+                grid-template-columns: 1fr;
+            }
+
+            .article-aside {
+                position: static;
+            }
+
+            .hero-stats {
+                flex-wrap: wrap;
+                gap: 2rem;
+            }
+
+            .bias-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .prediction-item {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .masthead-inner {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .footer-inner {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--ink-faded);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        /* Drop cap for first paragraph */
+        .drop-cap::first-letter {
+            font-family: var(--display);
+            float: left;
+            font-size: 4rem;
+            line-height: 0.8;
+            padding-right: 0.5rem;
+            padding-top: 0.2rem;
+        }
+
+        /* Distinctive hover states */
+        .prediction-item {
+            position: relative;
+        }
+
+        .prediction-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: transparent;
+            transition: background 0.2s;
+        }
+
+        .prediction-item:hover::before {
+            background: var(--ink);
+        }
+
+        /* Number styling */
+        .section-num {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--ink-faded);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-num::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: var(--ink-faded);
+        }
+
+        /* Pull quote styling */
+        .verdict-text {
+            font-family: var(--display);
+            font-size: 1.3rem;
+            font-style: italic;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .verdict-text::before {
+            content: '"';
+            font-size: 3rem;
+            position: absolute;
+            left: -0.5rem;
+            top: -0.5rem;
+            opacity: 0.15;
+            font-family: var(--display);
+        }
+
+        /* Animate on scroll */
+        .article {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .article:nth-child(1) { animation-delay: 0.1s; }
+        .article:nth-child(2) { animation-delay: 0.15s; }
+        .article:nth-child(3) { animation-delay: 0.2s; }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Better focus states */
+        .filter-btn:focus, .sort-btn:focus {
+            outline: 2px solid var(--ink);
+            outline-offset: 2px;
+        }
+
+        /* Metric emphasis */
+        .metric-value.good::after {
+            content: ' ✓';
+            font-size: 0.7rem;
+        }
+
+        /* Red bar on missed predictions */
+        .prediction-accuracy.wrong {
+            position: relative;
+        }
+
+        .prediction-accuracy.wrong::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--red);
+        }
+    </style>
+</head>
+<body>
+    <header class="masthead">
+        <div class="masthead-inner">
+            <span class="masthead-date" id="current-date"></span>
+            <span class="masthead-title">Betting Market Autopsy</span>
+            <span class="masthead-date">Data Analysis</span>
+        </div>
+    </header>
+
+    <section class="hero">
+        <span class="hero-label">Investigation</span>
+        <h1>Do Prediction Markets <em>Actually</em> Predict?</h1>
+        <p class="hero-deck">
+            A rigorous examination of markets across three platforms to determine
+            if the crowds are as wise as they claim.
+        </p>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <span class="hero-stat-value" id="stat-markets">—</span>
+                <span class="hero-stat-label">Markets Analyzed</span>
+            </div>
+            <div class="hero-stat">
+                <span class="hero-stat-value" id="stat-resolved">—</span>
+                <span class="hero-stat-label">Resolved</span>
+            </div>
+            <div class="hero-stat">
+                <span class="hero-stat-value" id="stat-accuracy">—</span>
+                <span class="hero-stat-label">Win Rate</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="content">
+        <!-- Section 1: Calibration -->
+        <article class="article">
+            <div class="article-main">
+                <span class="section-num">01</span>
+                <h2 class="section-title">The Calibration Question</h2>
+                <div class="prose">
+                    <p class="drop-cap">
+                        When a prediction market prices an event at 70%, it's making
+                        a specific claim: this event should happen roughly seven times
+                        out of ten. But is that actually true?
+                    </p>
+                    <p>
+                        <strong>Calibration</strong> measures whether stated probabilities match
+                        observed frequencies. A well-calibrated market doesn't just get
+                        individual predictions right—it gets the <em>distribution</em> right.
+                    </p>
+                    <p>
+                        We tested this by grouping hundreds of resolved predictions into
+                        probability buckets and comparing market prices against actual outcomes.
+                    </p>
+                </div>
+
+                <div class="chart-frame">
+                    <div class="chart-title">Calibration Curve</div>
+                    <div id="calibration-chart" style="height: 320px;">
+                        <div class="loading">Loading chart...</div>
+                    </div>
+                    <p class="chart-caption">
+                        The diagonal line represents perfect calibration. Points above
+                        the line indicate underconfidence; below indicates overconfidence.
+                    </p>
+                </div>
+            </div>
+
+            <aside class="article-aside">
+                <div class="data-card">
+                    <div class="data-card-header">Key Metrics</div>
+                    <div class="metric-row">
+                        <span class="metric-label">Brier Score</span>
+                        <span class="metric-value" id="metric-brier">—</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Calibration Error</span>
+                        <span class="metric-value" id="metric-ece">—</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">H-L Test p-value</span>
+                        <span class="metric-value" id="metric-hl">—</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Markets Analyzed</span>
+                        <span class="metric-value" id="metric-n">—</span>
+                    </div>
+                </div>
+
+                <div class="verdict-box">
+                    <div class="verdict-label">Finding</div>
+                    <p class="verdict-text" id="calibration-verdict">
+                        Loading analysis...
+                    </p>
+                </div>
+            </aside>
+        </article>
+
+        <!-- Section 2: Platform Comparison -->
+        <article class="article">
+            <div class="article-main">
+                <span class="section-num">02</span>
+                <h2 class="section-title">The Platform Showdown</h2>
+                <div class="prose">
+                    <p class="drop-cap">
+                        Not all prediction markets are created equal. Some attract sharper
+                        bettors, some have more liquidity, and some focus on different
+                        question types entirely.
+                    </p>
+                    <p>
+                        We compared <strong>Metaculus</strong> (a forecasting-focused platform
+                        with track records) against <strong>Manifold</strong> (a play-money
+                        market with high volume) to see who predicts better.
+                    </p>
+                </div>
+
+                <table class="comparison-table" id="platform-table">
+                    <thead>
+                        <tr>
+                            <th>Platform</th>
+                            <th>Markets</th>
+                            <th>Brier Score</th>
+                            <th>ECE</th>
+                            <th>Calibrated?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="loading">Loading platforms...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <aside class="article-aside">
+                <div class="data-card">
+                    <div class="data-card-header">Score Interpretation</div>
+                    <div class="metric-row">
+                        <span class="metric-label">Random Guessing</span>
+                        <span class="metric-value">0.250</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Good Forecaster</span>
+                        <span class="metric-value">&lt; 0.200</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Excellent</span>
+                        <span class="metric-value">&lt; 0.150</span>
+                    </div>
+                </div>
+
+                <div class="verdict-box">
+                    <div class="verdict-label">Finding</div>
+                    <p class="verdict-text" id="platform-verdict">
+                        Loading analysis...
+                    </p>
+                </div>
+            </aside>
+        </article>
+
+        <!-- Section 3: Favorite-Longshot Bias -->
+        <article class="article">
+            <div class="article-main">
+                <span class="section-num">03</span>
+                <h2 class="section-title">The Longshot Problem</h2>
+                <div class="prose">
+                    <p class="drop-cap">
+                        In traditional betting markets, a well-documented phenomenon exists:
+                        people systematically overbet longshots and underbet favorites.
+                        Do prediction markets suffer the same bias?
+                    </p>
+                    <p>
+                        We measured bias as the difference between <strong>predicted probability</strong>
+                        and <strong>actual frequency</strong>. Positive bias means the market
+                        overprices events (thinks they're more likely than they are).
+                    </p>
+                </div>
+
+                <div class="bias-grid">
+                    <div class="bias-card overpriced" id="bias-longshot-card">
+                        <div class="bias-type">Longshots (&lt;20%)</div>
+                        <div class="bias-value" id="bias-longshot">—</div>
+                        <div class="bias-desc">Slightly overpriced</div>
+                    </div>
+                    <div class="bias-card fair" id="bias-favorite-card">
+                        <div class="bias-type">Favorites (&gt;80%)</div>
+                        <div class="bias-value" id="bias-favorite">—</div>
+                        <div class="bias-desc">Nearly fair</div>
+                    </div>
+                </div>
+
+                <div class="chart-frame">
+                    <div class="chart-title">Bias by Probability Bucket</div>
+                    <div id="bias-chart" style="height: 260px;">
+                        <div class="loading">Loading chart...</div>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="article-aside">
+                <div class="verdict-box">
+                    <div class="verdict-label">Finding</div>
+                    <p class="verdict-text" id="bias-verdict">
+                        Loading analysis...
+                    </p>
+                </div>
+            </aside>
+        </article>
+
+        <!-- Prediction Browser -->
+        <section class="browser-section">
+            <div class="browser-header">
+                <div>
+                    <h2 class="browser-title">See the Predictions</h2>
+                    <p style="font-size: 0.85rem; color: var(--ink-faded); margin-top: 0.25rem;">
+                        Compare final market prices against actual outcomes
+                    </p>
+                </div>
+                <div class="browser-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="correct">Correct</button>
+                    <button class="filter-btn" data-filter="wrong">Missed</button>
+                </div>
+            </div>
+
+            <div class="browser-controls" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <span style="font-family: var(--mono); font-size: 0.7rem; color: var(--ink-faded); text-transform: uppercase; padding: 0.5rem 0;">Sort:</span>
+                <button class="sort-btn active" data-sort="recent">Recent</button>
+                <button class="sort-btn" data-sort="accurate">Most Accurate</button>
+                <button class="sort-btn" data-sort="inaccurate">Biggest Misses</button>
+            </div>
+
+            <div class="prediction-header" style="display: grid; grid-template-columns: 1fr 100px 100px 80px; gap: 1rem; padding: 0.75rem 1.25rem; font-family: var(--mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faded); border-bottom: 1px solid var(--rule);">
+                <span>Question</span>
+                <span style="text-align: center;">Predicted</span>
+                <span style="text-align: center;">Outcome</span>
+                <span style="text-align: center;" title="Absolute difference between predicted probability and outcome (0% or 100%)">Error</span>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--ink-faded); margin-bottom: 1rem; font-style: italic;">
+                Error shows the gap between the final market price and the outcome. A prediction of 90% that resolves YES has 10pp error; if it resolves NO, 90pp error.
+            </p>
+
+            <div class="prediction-list" id="prediction-list">
+                <div class="loading" style="grid-column: 1/-1;">Loading predictions...</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Conclusion -->
+    <section class="conclusion">
+        <div class="conclusion-rule"></div>
+        <h2>The markets are <em>remarkably good</em>—but not infallible.</h2>
+        <p>
+            Statistical tests confirm these platforms are well-calibrated overall.
+            But subtle biases exist: longshots carry a small premium, and mid-range
+            probabilities show mild overconfidence. The edge is too small to exploit
+            profitably, confirming what economists have long suspected—crowds aggregate
+            information efficiently.
+        </p>
+    </section>
+
+    <footer>
+        <div class="footer-inner">
+            <span class="footer-text">Betting Market Autopsy — Data-driven analysis</span>
+            <div class="footer-tech">
+                <span class="tech-tag">Python</span>
+                <span class="tech-tag">DuckDB</span>
+                <span class="tech-tag">FastAPI</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Set current date
+        document.getElementById('current-date').textContent =
+            new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+        // Plotly theme
+        const plotlyTheme = {
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent',
+            font: {
+                family: 'IBM Plex Mono',
+                color: '#4a4a46',
+                size: 11
+            },
+            margin: { l: 45, r: 20, t: 20, b: 45 }
+        };
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const [stats, predictions] = await Promise.all([
+                    fetch('/api/stats').then(r => r.json()),
+                    fetch('/api/predictions?limit=100').then(r => r.json())
+                ]);
+
+                document.getElementById('stat-markets').textContent = stats.total_markets?.toLocaleString() || '—';
+                document.getElementById('stat-resolved').textContent = stats.resolved_markets?.toLocaleString() || '—';
+
+                // Calculate win rate from predictions
+                const withProb = predictions.filter(p => p.correct !== null);
+                if (withProb.length > 0) {
+                    const correct = withProb.filter(p => p.correct === true).length;
+                    const winRate = Math.round((correct / withProb.length) * 100);
+                    document.getElementById('stat-accuracy').textContent = winRate + '%';
+                }
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        // Load calibration
+        async function loadCalibration() {
+            try {
+                const [summary, curve] = await Promise.all([
+                    fetch('/api/calibration/summary').then(r => r.json()),
+                    fetch('/api/calibration/curve-data').then(r => r.json())
+                ]);
+
+                // Metrics
+                document.getElementById('metric-brier').textContent = summary.brier_score?.toFixed(3) || '—';
+                document.getElementById('metric-brier').className = 'metric-value ' + (summary.brier_score < 0.2 ? 'good' : '');
+                document.getElementById('metric-ece').textContent = summary.ece?.toFixed(3) || '—';
+                document.getElementById('metric-hl').textContent = summary.hl_pvalue?.toFixed(3) || '—';
+                document.getElementById('metric-n').textContent = summary.n_markets?.toLocaleString() || '—';
+
+                // Verdict
+                const calibrated = summary.hl_pvalue > 0.05;
+                document.getElementById('calibration-verdict').textContent = calibrated
+                    ? `Markets pass the Hosmer-Lemeshow test (p=${summary.hl_pvalue.toFixed(2)}), indicating statistically sound calibration.`
+                    : `Markets fail the calibration test, showing systematic prediction errors.`;
+
+                // Chart
+                if (curve.curve) {
+                    const predicted = curve.curve.map(b => b.predicted);
+                    const actual = curve.curve.map(b => b.actual);
+
+                    Plotly.newPlot('calibration-chart', [
+                        {
+                            x: [0, 1], y: [0, 1],
+                            mode: 'lines',
+                            line: { color: '#d4d0c8', dash: 'dash', width: 1 },
+                            hoverinfo: 'skip'
+                        },
+                        {
+                            x: predicted, y: actual,
+                            mode: 'lines+markers',
+                            line: { color: '#1a1a18', width: 2 },
+                            marker: { size: 7, color: '#1a1a18' },
+                            hovertemplate: 'Predicted: %{x:.0%}<br>Actual: %{y:.0%}<extra></extra>'
+                        }
+                    ], {
+                        ...plotlyTheme,
+                        xaxis: { title: 'Predicted', range: [0, 1], dtick: 0.2, gridcolor: '#edeae3' },
+                        yaxis: { title: 'Actual', range: [0, 1], dtick: 0.2, gridcolor: '#edeae3' },
+                        showlegend: false
+                    }, { displayModeBar: false, responsive: true });
+                }
+            } catch (e) {
+                console.error('Failed to load calibration:', e);
+            }
+        }
+
+        // Load platforms
+        async function loadPlatforms() {
+            try {
+                const data = await fetch('/api/calibration/comparison').then(r => r.json());
+                const platforms = data.filter(p => p.name !== 'all');
+
+                const tbody = document.querySelector('#platform-table tbody');
+                tbody.innerHTML = platforms.map(p => `
+                    <tr>
+                        <td>
+                            <span class="platform-badge">
+                                <span class="platform-dot ${p.name}"></span>
+                                ${p.name.charAt(0).toUpperCase() + p.name.slice(1)}
+                            </span>
+                        </td>
+                        <td>${p.n_markets.toLocaleString()}</td>
+                        <td>
+                            <span class="score-indicator">
+                                ${p.brier_score.toFixed(3)}
+                                <span class="score-bar">
+                                    <span class="score-bar-fill" style="width: ${(1 - p.brier_score) * 100}%"></span>
+                                </span>
+                            </span>
+                        </td>
+                        <td>${p.ece.toFixed(3)}</td>
+                        <td class="${p.calibrated ? 'calibrated-yes' : 'calibrated-no'}">
+                            ${p.calibrated ? 'Yes' : 'No'}
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Verdict
+                const best = platforms.reduce((a, b) => a.brier_score < b.brier_score ? a : b);
+                document.getElementById('platform-verdict').textContent =
+                    `${best.name.charAt(0).toUpperCase() + best.name.slice(1)} leads with a Brier score of ${best.brier_score.toFixed(3)}, though all platforms demonstrate reasonable forecasting ability.`;
+
+            } catch (e) {
+                console.error('Failed to load platforms:', e);
+            }
+        }
+
+        // Load bias
+        async function loadBias() {
+            try {
+                const data = await fetch('/api/calibration/bias').then(r => r.json());
+
+                // Update cards
+                const lb = data.longshot_bias * 100;
+                const fb = data.favorite_bias * 100;
+
+                document.getElementById('bias-longshot').textContent = (lb >= 0 ? '+' : '') + lb.toFixed(1) + '%';
+                document.getElementById('bias-favorite').textContent = (fb >= 0 ? '+' : '') + fb.toFixed(1) + '%';
+
+                // Update card styling based on values
+                const lsCard = document.getElementById('bias-longshot-card');
+                const favCard = document.getElementById('bias-favorite-card');
+
+                lsCard.className = 'bias-card ' + (lb > 1 ? 'overpriced' : 'fair');
+                favCard.className = 'bias-card ' + (Math.abs(fb) > 2 ? 'overpriced' : 'fair');
+
+                // Verdict
+                document.getElementById('bias-verdict').textContent = lb > 0
+                    ? `Classic favorite-longshot bias confirmed. Low-probability events are overpriced by ~${lb.toFixed(1)}%, matching findings from traditional betting markets.`
+                    : `No significant favorite-longshot bias detected in this sample.`;
+
+                // Chart
+                if (data.buckets) {
+                    const buckets = data.buckets.map(b =>
+                        `${Math.round(b.bin_start * 100)}–${Math.round(b.bin_end * 100)}%`
+                    );
+                    const bias = data.buckets.map(b => b.bias);
+                    const colors = bias.map(b => b > 0.02 ? '#c23d2e' : b < -0.02 ? '#2e7d4a' : '#8a8a86');
+
+                    Plotly.newPlot('bias-chart', [{
+                        x: buckets, y: bias,
+                        type: 'bar',
+                        marker: { color: colors },
+                        hovertemplate: '%{x}: %{y:+.1%}<extra></extra>'
+                    }], {
+                        ...plotlyTheme,
+                        xaxis: { title: 'Probability Bucket' },
+                        yaxis: {
+                            title: 'Bias',
+                            tickformat: '+.0%',
+                            zeroline: true,
+                            zerolinecolor: '#1a1a18',
+                            zerolinewidth: 1,
+                            gridcolor: '#edeae3'
+                        }
+                    }, { displayModeBar: false, responsive: true });
+                }
+            } catch (e) {
+                console.error('Failed to load bias:', e);
+            }
+        }
+
+        // Load predictions
+        let currentFilter = 'all';
+        let currentSort = 'recent';
+        let predictions = [];
+
+        async function loadPredictions(sort = 'recent') {
+            currentSort = sort;
+            try {
+                const res = await fetch(`/api/predictions?limit=100&sort=${sort}`);
+                predictions = await res.json();
+                renderPredictions();
+            } catch (e) {
+                console.error('Failed to load predictions:', e);
+            }
+        }
+
+        function renderPredictions() {
+            let filtered = predictions;
+
+            // Apply filter
+            if (currentFilter === 'correct') {
+                filtered = predictions.filter(p => p.correct === true);
+            } else if (currentFilter === 'wrong') {
+                filtered = predictions.filter(p => p.correct === false);
+            }
+
+            const list = document.getElementById('prediction-list');
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="loading">No predictions match this filter</div>';
+                return;
+            }
+
+            list.innerHTML = filtered.slice(0, 20).map(p => {
+                const outcome = p.resolution >= 0.5 ? 'YES' : 'NO';
+                const outcomeClass = p.resolution >= 0.5 ? 'yes' : 'no';
+                const probText = p.final_probability !== null
+                    ? Math.round(p.final_probability * 100) + '%'
+                    : '—';
+                const errorText = p.error !== null
+                    ? (p.error * 100).toFixed(1) + 'pp'
+                    : '—';
+                const accuracyClass = p.correct === true ? 'correct' : (p.correct === false ? 'wrong' : '');
+
+                return `
+                    <div class="prediction-item">
+                        <div>
+                            <div class="prediction-title">${p.title.slice(0, 80)}${p.title.length > 80 ? '...' : ''}</div>
+                            <div class="prediction-platform">${p.platform}</div>
+                        </div>
+                        <div class="prediction-prob">${probText}</div>
+                        <div class="prediction-outcome ${outcomeClass}">${outcome}</div>
+                        <div class="prediction-accuracy ${accuracyClass}">${errorText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderPredictions();
+            });
+        });
+
+        // Sort buttons
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                loadPredictions(btn.dataset.sort);
+            });
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadCalibration();
+            loadPlatforms();
+            loadBias();
+            loadPredictions('recent');
+        });
+    </script>
+</body>
+</html>
